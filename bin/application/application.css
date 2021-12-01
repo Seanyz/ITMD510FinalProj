@@ -1,1 +1,20 @@
 /* JavaFX CSS - Leave this comment until you have at least create one rule which uses -fx-Property */
+
+#prgTitle {
+  -fx-font-weight: bolder;
+  -fx-font-size: 24px;
+  -fx-text-align: center;
+}
+
+.sysInfoTitle {
+  -fx-font-weight: bolder;
+  -fx-font-size: 8px;
+}
+
+.tblTitle {
+  -fx-font-weight: bolder;
+}
+
+.btnTxt {
+  -fx-font-weight: bolder;
+}
