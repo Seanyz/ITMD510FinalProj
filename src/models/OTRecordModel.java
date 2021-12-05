@@ -1,104 +1,180 @@
 package models;
 
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 
 import dao.DBConnect;
 
-public class OTRecordModel extends DBConnect{
-	
-	public void addOTRecord(String accountid, int week, double othours) {
-		//INSERT INTO `otrecord` (`accountid`, `createdate`, `updatedate`, `otweek`, `othours`, `status`, `changeby`) 
-		//VALUES ('2021002', '2021-11-25', '2021-11-25', '1', '2', '1', '2021002');
-		Date dNow = new java.sql.Date(new java.util.Date().getTime());
-		SimpleDateFormat ftime = new SimpleDateFormat("yyyyMMdd");
-		String query = "INSERT INTO otrecord (accountid, createdate, updatedate, otweek, othours, status, changeby) "
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?);";
-		try(PreparedStatement stmt = connection.prepareStatement(query)){
-			stmt.setString(1, accountid);
-			stmt.setDate(2, dNow);
-			stmt.setDate(3, dNow);
-			stmt.setInt(4, week);
-			stmt.setDouble(5, othours);
-			stmt.setInt(6, 1);
-			stmt.setString(7, accountid);
-			if(stmt.executeUpdate() > 0) {
+public class OTRecordModel extends DBConnect {
+	private ArrayList<OTRecord> otrecords = new ArrayList<OTRecord>();
+	private DepartmentModel deptmodel = null;
+	private int lastRcdid;
+
+	public OTRecordModel() {
+		deptmodel = new DepartmentModel();
+	}
+
+	public ArrayList<OTRecord> getOTRecords(int role, String accountid) {
+		readOTRecord(role, accountid);
+		return this.otrecords;
+	}
+
+	public void readOTRecord(int role, String accountid) {
+		/*
+		 * read OT records based on role: 1=normal user, get all own records 2=manager,
+		 * get all department records
+		 */
+		String query = "";
+		UserModel um = new UserModel();
+		int udeptid = um.findUser(accountid).getDeptid();
+
+		// normal user only get his own records
+		if (role == 1) {
+			query = "SELECT * FROM yzh204_otrecord WHERE accountid = ?;";
+			try (PreparedStatement stmt = connection.prepareStatement(query)) {
+				stmt.setString(1, accountid);
+				exeQueOTRecord(stmt);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+
+		// Manager will get all employee's record in this department
+		if (role == 2) {
+			query = "SELECT * FROM yzh204_otrecord WHERE deptid = ?;";
+			try (PreparedStatement stmt = connection.prepareStatement(query)) {
+				stmt.setInt(1, udeptid);
+				exeQueOTRecord(stmt);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+
+		// Admin user get all records in all department
+		if (role == 3) {
+			query = "SELECT * FROM yzh204_otrecord WHERE 1;";
+			try (PreparedStatement stmt = connection.prepareStatement(query)) {
+				exeQueOTRecord(stmt);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void exeQueOTRecord(PreparedStatement stmt) throws SQLException {
+		ResultSet rs = stmt.executeQuery();
+		while (rs.next()) {
+			int id = rs.getInt("id");
+			String account = rs.getString("accountid");
+			int othours = rs.getInt("othours");
+			int status = rs.getInt("statusid");
+			int deptid = rs.getInt("deptid");
+			String department = rs.getString("department");
+			OTRecord getOtrecord = new OTRecord(id, account, othours, status, deptid, department);
+			otrecords.add(getOtrecord);
+		}
+	}
+
+	public void addOTRecord(OTRecord newotr) {
+		String department = deptmodel.getDept(newotr.getDeptid());
+		String query = "INSERT INTO yzh204_otrecord (accountid, othours, statusid, " + "deptid, department) "
+				+ "VALUES (?, ?, ?, ?, ?);";
+
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setString(1, newotr.getAccountid());
+			stmt.setInt(2, newotr.getOthours());
+			stmt.setInt(3, newotr.getStatusid());
+			stmt.setInt(4, newotr.getDeptid());
+			stmt.setString(5, department);
+			if (stmt.executeUpdate() > 0) {
 				System.out.println("Insert OTRecord successfully.");
+				getLastRecord();
+				procAddRecord(lastRcdid);
 			} else {
 				System.out.println("Insert OTRecord failed!");
 			}
-		}catch(SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		
 	}
-	public void readOTRecord(int level, String accountid) {
-		// read record based on level: 1=normal user, 2=manager, 3=admin
-		
-		String query = "";
-		switch(level) {
-		case 1:
-			query = "SELECT * FROM otrecord WHERE accountid = ?;";
-			break;
-		case 2:
-			query = "SELECT * FORM otrecord WHERE deptid = ?;";
+
+	public int getLastRecord() {
+		String query = "SELECT * FROM yzh204_otrecord ORDER BY id desc LIMIT 1;";
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			ResultSet rs = stmt.executeQuery();
+			if (rs.next()) {
+				lastRcdid = rs.getInt("id");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
-			
+		return lastRcdid;
 	}
-	
+
 	public int getOTRecordStatus(int id) {
-		String query = "SELECT status FROM otrecord WHERE id = ?;";
-		try(PreparedStatement stmt = connection.prepareStatement(query)){
+		String query = "SELECT statusid FROM yzh204_otrecord WHERE id = ?;";
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
 			stmt.setInt(1, id);
 			ResultSet rs = stmt.executeQuery();
 			if (rs.next()) {
-				return rs.getInt("status");
+				return rs.getInt("statusid");
 			}
-		}catch(SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 		return 0;
 	}
-	
+
 	public void updateOTRecordStatus(int id, int status) {
-		String query = "UPDATE otrecord SET status = ? WHERE id = ?;";
-		try(PreparedStatement stmt = connection.prepareStatement(query)){
+		if (status == 3) {
+			procDelRecord(id);
+		}
+		String query = "UPDATE yzh204_otrecord SET statusid = ? WHERE id = ?;";
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
 			stmt.setInt(1, status);
 			stmt.setInt(2, id);
-			if(stmt.executeUpdate() > 0) {
+			if (stmt.executeUpdate() > 0) {
 				System.out.printf("Status updated to: %d\n", status);
-			}else {
+			} else {
 				System.out.println("Status updated failed!");
 			}
-		}catch(SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	
-	
+
 	public void deleteOTRecord(int id) {
 		// DELETE FROM `otrecord` WHERE `id = xxx`
-		String query = "DELETE FROM otrecord WHERE id = ?;";
-		try(PreparedStatement stmt = connection.prepareStatement(query)){
+		procDelRecord(id);
+		String query = "DELETE FROM yzh204_otrecord WHERE id = ?;";
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
 			stmt.setInt(1, id);
 			int effectRowNum = stmt.executeUpdate();
-			System.out.printf("Delet %d row(s) successfully.\n", effectRowNum);
-		} catch(SQLException e) {
+			System.out.printf("Delete %d row(s) successfully.\n", effectRowNum);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void procAddRecord(int rcdid) {
+		String query = "CALL yzh204_addrecord(?);";
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setInt(1, rcdid);
+			stmt.executeUpdate();
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	/* Test code*/
-	public static void main(String[] args) {
-		OTRecordModel test = new OTRecordModel();
-		//test.addOTRecord("2021004", 4, 30);
-		//test.deleteOTRecord(2);
-		System.out.println(test.getOTRecordStatus(4));
-		test.updateOTRecordStatus(4, 2);
-		System.out.println(test.getOTRecordStatus(4));
+	public void procDelRecord(int rcdid) {
+		String query = "CALL yzh204_delrecord(?);";
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setInt(1, rcdid);
+			stmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 }

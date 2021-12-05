@@ -1,15 +1,28 @@
 package controllers;
 
+/**
+ * @author: YiZhang
+ * @date: Dec-01-2021
+ * @version: 1.0
+ * @description: The UserListController handles interaction on user list page:
+ * 1. Present user list
+ * 2. update user's information
+ * 3. add / delete one user
+ */
+
+import java.net.URL;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.ResourceBundle;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
@@ -19,13 +32,13 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TableView.TableViewSelectionModel;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
-import models.AdminModel;
+
 import models.User;
 import models.UserModel;
 
-public class AdminController {
+public class UserListController implements Initializable {
 
-	// Table
+	// Table view
 	@FXML
 	private TableView<User> userTable;
 	@FXML
@@ -59,14 +72,15 @@ public class AdminController {
 	@FXML
 	private CheckBox curIsMgr;
 	// Operation buttons
-	@FXML
-	private Button refBtn;
+	
 	@FXML
 	private Button addBtn;
 	@FXML
 	private Button updtBtn;
 	@FXML
 	private Button delBtn;
+	@FXML
+	private Button logoutBtn;
 
 	private String setAccount;
 	private String setFirst;
@@ -81,11 +95,29 @@ public class AdminController {
 	private ArrayList<User> users = new ArrayList<User>();
 	private ObservableList<User> userList;
 	private UserModel model;
-
-	public AdminController() {
+	private LoginController loginctrl;
+	private String loginuser;
+	
+	// constructor
+	public UserListController() {
 		model = new UserModel();
+		loginctrl = new LoginController();
+	}
+	@Override
+	public void initialize(URL location, ResourceBundle resources) {
+		// TODO Auto-generated method stub
+		System.out.println("Initialize user list page...");
+		getUserList();
+		monitorTable();
+		System.out.println("User list page loaded successfully.");
+	}
+	
+	// initialize data to get login user account id
+	public void initData(String loginaccountid) {
+		this.loginuser = loginaccountid;
 	}
 
+	// Check user input values
 	public User checkUserInfo() {
 		setAccount = curAccount.getText();
 		setFirst = curFName.getText();
@@ -122,7 +154,8 @@ public class AdminController {
 		setUser = new User(setAccount, setFirst, setLast, setDept, setPassword, setIsAdmin, setIsMgr);
 		return setUser;
 	}
-
+	
+	// get all users list from DB
 	public void getUserList() {
 		users = model.getUsers();
 		userList = FXCollections.observableList(users);
@@ -135,12 +168,16 @@ public class AdminController {
 		isAdmin.setCellValueFactory(new PropertyValueFactory<User, Integer>("isAdmin"));
 		isMgr.setCellValueFactory(new PropertyValueFactory<User, Integer>("isMgr"));
 		userTable.setItems(userList);
-
+	}
+	
+	// monitor table selected reow
+	public void monitorTable() {
 		TableViewSelectionModel<User> selectionModel = userTable.getSelectionModel();
 		selectionModel.setSelectionMode(SelectionMode.SINGLE);
 		userTable.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<User>() {
 			@Override
 			public void changed(ObservableValue<? extends User> observable, User oldVal, User newVal) {
+				if (newVal == null) { return; }
 				curAccount.setText(newVal.getAccountid());
 				curFName.setText(newVal.getFirst());
 				curLName.setText(newVal.getLast());
@@ -151,39 +188,65 @@ public class AdminController {
 			}
 		});
 	}
+	
+	// refresh table view
+	public void refrTable() {
+		userList.removeAll(userList);
+		getUserList();
+	}
 
+	// add a new user
 	public void addUser() {
-		System.out.println("Add user");
+		
 		if (checkUserInfo() != null) {
 			rs = model.addUser(setUser);
 			if (rs > 0) {
 				userTable.getItems().add(setUser);
+				refrTable();
+				System.out.println("Add a new user successfully.");
 			} else {
-				System.out.println("insert failed!");
+				System.out.println("!!!Insert new user failed!");
+				return;
 			}
 		}
 	}
 
+	// update user information
 	public void updateUser() {
-		System.out.println("updated user");
+		
 		if (checkUserInfo() != null) {
 			rs = model.updateUser(setUser);
 			if (rs > 0) {
-				userList.removeAll(users);
-				getUserList();
+				refrTable();
+				System.out.println("Updated user info successfully.");
+			} else {
+				System.out.println("!!!update user info failed!");
+				return;
 			}
 		}
 	}
 
+	// delete a user
 	public void delUser() {
-		System.out.println("del user");
-		if (checkUserInfo() != null) {
+		if (curAccount.getText().equals(loginuser)) {
+			System.out.println("!!!Your cannot delete current login user.");
+			return;
+		} else if (checkUserInfo() != null) {
 			rs = model.deleteUser(setUser);
 			if (rs > 0) {
-				userList.removeAll(users);
-				getUserList();
+				refrTable();
+				System.out.println("Delete select user successfully.");
+			} else {
+				System.out.println("Delete user failed!");
+				return;
 			}
 		}
 	}
+	
+	// logout
+	public void logout() {
+		loginctrl.logout();
+	}
+	
 
 }

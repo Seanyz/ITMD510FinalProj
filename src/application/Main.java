@@ -28,6 +28,9 @@ public class Main extends Application {
 	}
 	
 	public static void main(String[] args) {
+		System.out.println("-- ITMD 510 Final Project --");
+		System.out.println("Student Name: Yi Zhang\n\nProgram initializing...\n");
+		
 		launch(args);
 	}
 }

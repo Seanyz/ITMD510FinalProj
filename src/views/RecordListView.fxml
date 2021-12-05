@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane minHeight="400.0" minWidth="550.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controllers.RecordListController">
+   <children>
+      <Button fx:id="addBtn" layoutX="21.0" layoutY="265.0" minWidth="70.0" mnemonicParsing="false" onAction="#addRecord" text="Add" />
+      <TableView fx:id="otRecordTable" layoutX="105.0" layoutY="14.0" prefHeight="316.0" prefWidth="411.0">
+        <columns>
+          <TableColumn fx:id="rid" prefWidth="37.0" text="id" />
+          <TableColumn fx:id="account" prefWidth="113.0" text="account" />
+            <TableColumn fx:id="hour" prefWidth="88.0" text="apply hours" />
+            <TableColumn fx:id="dept" prefWidth="92.0" text="department" />
+            <TableColumn fx:id="statusid" prefWidth="84.0" text="statusid" />
+        </columns>
+      </TableView>
+      <Button fx:id="delBtn" layoutX="21.0" layoutY="303.0" minWidth="70.0" mnemonicParsing="false" onAction="#delRecord" text="Delete" />
+      <Button fx:id="logoutBtn" layoutX="456.0" layoutY="359.0" minWidth="60.0" mnemonicParsing="false" onAction="#logout" text="Logout" />
+      <Button fx:id="aprvBtn" layoutX="21.0" layoutY="187.0" minWidth="70.0" mnemonicParsing="false" onAction="#aprvRecord" text="Approve" />
+      <Button fx:id="rejBtn" layoutX="21.0" layoutY="225.0" minWidth="70.0" mnemonicParsing="false" onAction="#rejRecord" text="Reject" />
+      <TextArea editable="false" layoutX="105.0" layoutY="336.0" prefHeight="52.0" prefWidth="235.0" text="- New record can be deleted&#10;- Approved / Rejected record cannot be deleted&#10;- Only manager can approve or reject record  &#10;which submited by employee in this department">
+         <font>
+            <Font size="10.0" />
+         </font>
+      </TextArea>
+   </children>
+</AnchorPane>

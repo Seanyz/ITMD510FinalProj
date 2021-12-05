@@ -1,5 +1,12 @@
 package models;
 
+/**
+ * @author: YiZhang
+ * @date: Dec-01-2021
+ * @version: 1.0
+ * @description: The LoginModel takes responsibility of CRUD operation on DB 
+ * "user" table
+ */
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,6 +17,16 @@ public class LoginModel extends DBConnect {
 
 	private Boolean admin = false;
 	private Boolean manager = false;
+	private String accountid = "";
+
+	// All gets and sets methods.
+	public String getAccountId() {
+		return accountid;
+	}
+
+	public void setAccountId(String accountid) {
+		this.accountid = accountid;
+	}
 
 	private void setAdmin(Boolean admin) {
 		this.admin = admin;
@@ -27,8 +44,9 @@ public class LoginModel extends DBConnect {
 		return manager;
 	}
 
+	// To determine if this user with "admin" role
 	public Integer isAdmin(String accountid) {
-		String query = "SELECT isAdmin FROM user WHERE accountid = ?;";
+		String query = "SELECT isAdmin FROM yzh204_user WHERE accountid = ?;";
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
 			stmt.setString(1, accountid);
 			ResultSet rs = stmt.executeQuery();
@@ -41,8 +59,9 @@ public class LoginModel extends DBConnect {
 		return -1;
 	}
 
+	// To determine if this user with "manager" role
 	public Integer isManager(String accountid) {
-		String query = "SELECT isMgr FROM user WHERE accountid = ?;";
+		String query = "SELECT isMgr FROM yzh204_user WHERE accountid = ?;";
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
 			stmt.setString(1, accountid);
 			ResultSet rs = stmt.executeQuery();
@@ -55,8 +74,9 @@ public class LoginModel extends DBConnect {
 		return -1;
 	}
 
+	// To determine if this user and password are correct
 	public Boolean getCredentials(String username, String password) {
-		String query = "SELECT * FROM user WHERE accountid = ? and password = ?;";
+		String query = "SELECT * FROM yzh204_user WHERE accountid = ? and password = ?;";
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
 			stmt.setString(1, username);
 			stmt.setString(2, password);
@@ -68,21 +88,12 @@ public class LoginModel extends DBConnect {
 				if (isManager(username) == 1) {
 					setManager(true);
 				}
-				System.out.println(isAdmin(username));
-				System.out.println(isManager(username));
+				setAccountId(username);
 				return true;
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 		return false;
-	}
-
-	/* test code */
-	public static void main(String[] args) {
-		LoginModel test = new LoginModel();
-		test.getCredentials("2021001", "111111");
-		System.out.println(test.isAdmin());
-		System.out.println(test.isManager());
 	}
 }
